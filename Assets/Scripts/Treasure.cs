@@ -3,7 +3,7 @@ using UnityEngine;
 
 public class Treasure : NetworkBehaviour
 {
-    [Server]
+    [ServerCallback]
     void OnTriggerEnter(Collider other)
     {
         PlayerMovement player = other.GetComponent<PlayerMovement>();

@@ -5,12 +5,16 @@ public class TreasureSpawner : NetworkBehaviour
 {
     [SerializeField] GameObject TreasurePrefab;
     public static TreasureSpawner instance;
-    [SerializeField][Range(10,50)] float radius;
+    [Range(10,50)] public float radius;
 
+    public override void OnStartClient()
+    {
+        base.OnStartClient();
+        instance = this;
+    }
     public override void OnStartServer()
     {
         base.OnStartServer();
-        instance = this;
         SpawnTreasure(10);
     }
     public void SpawnTreasure(int ammount = 1)

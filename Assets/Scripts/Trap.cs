@@ -4,7 +4,7 @@ using UnityEngine;
 public class Trap : NetworkBehaviour
 {
     [SerializeField] TrapType trapType;
-    [Server]
+    [ServerCallback]
     void OnTriggerEnter(Collider other)
     {
         switch (trapType)
@@ -13,6 +13,12 @@ public class Trap : NetworkBehaviour
                 {
                     PlayerMovement player = other.GetComponent<PlayerMovement>();
                     player.TargetSlowPlayer();
+                }
+                break;
+            case TrapType.teleport:
+                {
+                    PlayerMovement player = other.GetComponent<PlayerMovement>();
+                    player?.TargetTeleportPlayer();
                 }
                 break;
         }

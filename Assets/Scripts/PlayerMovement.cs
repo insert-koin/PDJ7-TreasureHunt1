@@ -148,9 +148,21 @@ public class PlayerMovement : NetworkBehaviour {
         // Apply horizontal look to player/parent
     }
     #endregion
-    [ClientRpc]
-    public void RpcGoToSpawnPoint(Vector3 pos)
+    [TargetRpc]
+    public void TargetTeleportPlayer()
     {
+        float radius;
+        if (TreasureSpawner.instance != null)
+        {
+            radius = TreasureSpawner.instance.radius;
+        }
+        else
+        {
+            radius = 20f;
+            Debug.LogWarning($"Não achamos o treasureSpawner, então settando o raio do Tp pra {radius}");
+        }
+        Vector2 pos2 = Random.insideUnitCircle * radius;
+        Vector3 pos = new Vector3(pos2.x, 1, pos2.y);
         transform.position = pos;
         Physics.SyncTransforms();
     }
