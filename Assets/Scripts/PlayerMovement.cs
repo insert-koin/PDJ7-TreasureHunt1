@@ -109,6 +109,8 @@ public class PlayerMovement : NetworkBehaviour {
         OnPlayerColorChanged.Invoke(playerColor);
         OnPlayerPointsChanged.Invoke(points);
         currentSpeed = speed;
+        MeshRenderer meshRenderer = GetComponentInChildren<MeshRenderer>();
+        meshRenderer.material.color = playerColor;
     }
     public override void OnStartLocalPlayer()
     {
