@@ -55,6 +55,10 @@ public class PlayerMovement : NetworkBehaviour {
     void PlayerPointsChanged(byte _, byte newPoints)
     {
         OnPlayerPointsChanged?.Invoke(newPoints);
+        if (newPoints >= 10)
+        {
+            GameManager.instance.Win(netIdentity);
+        }
     }
     #endregion
     #region Server

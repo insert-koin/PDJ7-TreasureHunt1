@@ -56,4 +56,16 @@ public class GameManager : NetworkBehaviour
     {
         CanvasUI.instance.Lose();
     }
+    [ServerCallback]
+    public void Win(NetworkIdentity netId)
+    {
+        gameIsRunning = false;
+        RpcLose();
+        TargetWin(netId.connectionToClient);
+    }
+    [TargetRpc]
+    void TargetWin(NetworkConnectionToClient conn)
+    {
+        CanvasUI.instance.Win();
+    }
 }

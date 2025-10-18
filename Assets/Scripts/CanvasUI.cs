@@ -11,6 +11,7 @@ public class CanvasUI : MonoBehaviour
     [Tooltip("Assign Players Panel for instantiating PlayerUI as child")]
     public RectTransform playersPanel;
     [SerializeField] GameObject painelDerrota;
+    [SerializeField] GameObject painelVitoria;
     public TextMeshProUGUI textoTimer;
     // static instance that can be referenced from static methods below.
     public static CanvasUI instance;
@@ -52,6 +53,11 @@ public class CanvasUI : MonoBehaviour
     public void Lose()
     {
         painelDerrota.SetActive(true);
+    }
+    public void Win()
+    {
+        painelDerrota.SetActive(false);
+        painelVitoria.SetActive(true);
     }
     public void Quit()
     {
