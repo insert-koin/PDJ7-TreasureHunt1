@@ -27,6 +27,7 @@ public class PlayerMovement : NetworkBehaviour {
     public GameObject playerUIPrefab;
     GameObject playerUIObject;
     PlayerUI playerUI = null;
+    bool isReady;
     #region SyncVars
 
     [Header("SyncVars")]
@@ -146,6 +147,19 @@ public class PlayerMovement : NetworkBehaviour {
         // Apply vertical look to camera
         transform.Rotate(Vector3.up * mouseX);
         // Apply horizontal look to player/parent
+        if (Keyboard.current.enterKey.wasPressedThisFrame)
+        {
+            if (isReady)
+            {
+                GameManager.instance.CmdReadyPlayers(-1);
+                isReady = false;
+            }
+            else
+            {
+                GameManager.instance.CmdReadyPlayers(+1);
+                isReady = true;
+            }
+        }
     }
     #endregion
     [TargetRpc]
@@ -160,7 +174,7 @@ public class PlayerMovement : NetworkBehaviour {
         {
             radius = 20f;
             Debug.LogWarning($"Não achamos o treasureSpawner, então settando o raio do Tp pra {radius}");
-        }
+        }   
         Vector2 pos2 = Random.insideUnitCircle * radius;
         Vector3 pos = new Vector3(pos2.x, 1, pos2.y);
         transform.position = pos;
