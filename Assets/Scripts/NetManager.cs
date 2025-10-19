@@ -11,10 +11,9 @@ public class NetManager : NetworkManager{
     /// <param name="conn">Connection from client.</param>
     public override void OnServerAddPlayer(NetworkConnectionToClient conn)
     {
-        Debug.Log("Entrei no OnServerAddPLayer do netManager");
         base.OnServerAddPlayer(conn);
         PlayerMovement.ResetPlayerNumbers();
-        GameManager.numberOfPlayers++;
+        GameManager.instance.AddPlayer();
     }
     /// <summary>
     /// Called on the server when a client disconnects.
@@ -25,6 +24,6 @@ public class NetManager : NetworkManager{
     {
         base.OnServerDisconnect(conn);
         PlayerMovement.ResetPlayerNumbers();
-        GameManager.numberOfPlayers--;
+        GameManager.instance.RemovePlayer();
     }
 }

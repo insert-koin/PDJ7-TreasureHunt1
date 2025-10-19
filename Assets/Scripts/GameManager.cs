@@ -11,11 +11,17 @@ public class GameManager : NetworkBehaviour
     float timer;
     [SyncVar]public bool gameIsRunning;
     public static int numberOfPlayers;
-    [SyncVar]public byte readyPlayers;
+    [SyncVar] public bool teamModeOn;
+    [SyncVar] public byte readyPlayers;
+    public override void OnStartServer()
+    {
+        base.OnStartServer();
+        instance = this;
+    }
     public override void OnStartClient()
     {
         base.OnStartClient();
-        instance = this;
+        if(instance==null)instance = this;
         timer = 60 * MinutesPerGame;
     }
     void StartGame()
@@ -67,5 +73,28 @@ public class GameManager : NetworkBehaviour
     void TargetWin(NetworkConnectionToClient conn)
     {
         CanvasUI.instance.Win();
+    }
+    [ServerCallback]
+    public void TeamWin(NetworkIdentity[] netIds)
+    {
+        gameIsRunning = false;
+        RpcLose();
+        foreach(NetworkIdentity ni in netIds)
+            TargetWin(ni.connectionToClient);
+    }
+    public void AddPlayer()
+    {
+        numberOfPlayers++;
+        Debug.Log($"Temos {numberOfPlayers} players");
+        if (numberOfPlayers == 4)
+        {
+            Debug.Log($"Temos {numberOfPlayers} players, entando no modo multiplayer");
+            teamModeOn = true;
+            PlayerMovement.SetTeamColors();
+        }
+    }
+    public void RemovePlayer()
+    {
+        numberOfPlayers--;
     }
 }

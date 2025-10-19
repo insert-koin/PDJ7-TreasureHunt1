@@ -4,6 +4,7 @@ using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using Unity.VisualScripting;
 using System.Collections.Generic;
+using System.Collections;
 
 public class PlayerMovement : NetworkBehaviour {
     [SerializeField] float speed = 5;
@@ -23,6 +24,8 @@ public class PlayerMovement : NetworkBehaviour {
     public event System.Action<byte> OnPlayerPointsChanged;
     // Players List to manage playerNumber
     static readonly List<PlayerMovement> playersList = new List<PlayerMovement>();
+    //[SyncVar] public byte[] teamPoints = new byte[2];
+    [SyncVar]public byte teamIndex;
     [Header("Player UI")]
     public GameObject playerUIPrefab;
     GameObject playerUIObject;
@@ -40,7 +43,7 @@ public class PlayerMovement : NetworkBehaviour {
     /// Random color for the playerData text, assigned in OnStartServer
     /// </summary>
     [SyncVar(hook = nameof(PlayerColorChanged))]public Color32 playerColor = Color.white;
-    [SyncVar(hook = nameof(PlayerPointsChanged))]public byte points = 0;
+    [SyncVar/* (hook = nameof(PlayerPointsChanged)) */]public byte points = 0;
     // This is called by the hook of playerNumber SyncVar above
     void PlayerNumberChanged(byte _, byte newPlayerNumber)
     {
@@ -49,17 +52,112 @@ public class PlayerMovement : NetworkBehaviour {
     // This is called by the hook of playerColor SyncVar above
     void PlayerColorChanged(Color32 _, Color32 newPlayerColor)
     {
+        MeshRenderer meshRenderer = GetComponentInChildren<MeshRenderer>();
+        meshRenderer.material.color = newPlayerColor;
         OnPlayerColorChanged?.Invoke(newPlayerColor);
+    }
+    [Command(requiresAuthority =false)]
+    public void CmdGainPoints(byte pointsGained)
+    {
+        points += 1;
+        if (!GameManager.instance.teamModeOn)
+        {
+            if (points >= 10)
+            {
+                GameManager.instance.Win(netIdentity);
+            }
+        }
+        else
+        {
+            foreach (PlayerMovement p in playersList)
+            {
+                if (p.teamIndex == teamIndex)
+                {
+                    if (p != this)
+                    {
+                        p.points = points;
+                        p.playerUI.playerPointsText.text=string.Format("Points: {0:00}", p.points);
+                    }
+                }
+            }
+            if (points > 10)
+            {
+                NetworkIdentity[] networkIdentities = new NetworkIdentity[playersList.Count / 2];
+                int i = 0;
+                foreach (PlayerMovement p in playersList)
+                {
+                    if (p.teamIndex == teamIndex)
+                    {
+                        networkIdentities[i] = p.netIdentity;
+                        i++;
+                    }
+                }
+                GameManager.instance.TeamWin(networkIdentities);
+            }
+        }
+        RpcDisplayPoints();
+    }
+    [ClientRpc]
+    public void RpcDisplayPoints()
+    {
+        StartCoroutine(DisplayPoints());
+    }
+    IEnumerator DisplayPoints()
+    {
+        yield return new WaitForSeconds(.1f);
+        OnPlayerPointsChanged?.Invoke(points);
     }
     // This is called by the hook of playerData SyncVar above
     void PlayerPointsChanged(byte _, byte newPoints)
     {
-        OnPlayerPointsChanged?.Invoke(newPoints);
-        if (newPoints >= 10)
+        if (!GameManager.instance.teamModeOn)
         {
-            GameManager.instance.Win(netIdentity);
+            OnPlayerPointsChanged?.Invoke(newPoints);
+            if (newPoints >= 10)
+            {
+                GameManager.instance.Win(netIdentity);
+            }
+        }
+        else
+        {
+            int teamPoints = 0;
+            foreach (PlayerMovement p in playersList)
+            {
+                if (p.teamIndex == teamIndex)
+                {
+                    teamPoints += p.points;
+                }
+            }
+            if (teamPoints >= 10)
+            {
+                NetworkIdentity[] networkIdentities = new NetworkIdentity[playersList.Count / 2];
+                int i = 0;
+                foreach (PlayerMovement p in playersList)
+                {
+                    if (p.teamIndex == teamIndex)
+                    {
+                        networkIdentities[i] = p.netIdentity;
+                        i++;
+                    }
+                }
+                GameManager.instance.TeamWin(networkIdentities);
+            }
         }
     }
+        /* int teamPoints = 0;
+        foreach (PlayerMovement p in playersList)
+        {
+            if (p.teamIndex == teamIndex)
+            {
+                teamPoints += p.points;
+            }
+        }
+        OnPlayerPointsChanged.Invoke((byte)teamPoints); */
+    /* [Command]
+    void CmdIncreaseTeamPoints()
+    {
+        teamPoints[teamIndex]++;
+    } */
     #endregion
     #region Server
     public override void OnStartServer()
@@ -81,6 +179,23 @@ public class PlayerMovement : NetworkBehaviour {
         byte playerNumber = 1;
         foreach (PlayerMovement player in playersList)
             player.playerNumber = playerNumber++;
+    }
+    [ServerCallback]
+    public static void SetTeamColors()
+    {
+        for (int i = 0; i < playersList.Count; i++)
+        {
+            if (i < playersList.Count / 2)
+            {
+                playersList[i].playerColor = new Color32(255, 0, 0, 255);
+                playersList[i].teamIndex = 0;
+            }
+            else
+            {
+                playersList[i].playerColor = new Color32(0, 0, 255, 255);
+                playersList[i].teamIndex = 1;
+            }
+        }
     }
     #endregion
     #region  Client

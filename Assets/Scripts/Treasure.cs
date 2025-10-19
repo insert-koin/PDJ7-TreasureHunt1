@@ -7,8 +7,8 @@ public class Treasure : NetworkBehaviour
     void OnTriggerEnter(Collider other)
     {
         PlayerMovement player = other.GetComponent<PlayerMovement>();
-        player.points++;
-        //Chamar o metodo de spawn do manager
+        player.CmdGainPoints(1);
+        TreasureSpawner.instance.SpawnTreasure(1);
         Destroy(gameObject);
     }
 }
