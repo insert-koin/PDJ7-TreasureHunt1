@@ -11,22 +11,23 @@ public class GameManager : NetworkBehaviour
     float timer;
     [SyncVar]public bool gameIsRunning;
     public static int numberOfPlayers;
-    [SyncVar] public bool teamModeOn;
+    [SyncVar] public bool teamModeOn;//syncVar usado no check de ganhar pontos
     [SyncVar] public byte readyPlayers;
     public override void OnStartServer()
     {
         base.OnStartServer();
-        instance = this;
+        instance = this;//singleton do server
     }
     public override void OnStartClient()
     {
         base.OnStartClient();
-        if(instance==null)instance = this;
+        if (instance == null) instance = this;
+        //singleton dos clientes
         timer = 60 * MinutesPerGame;
     }
     void StartGame()
     {
-        gameIsRunning = true;
+        gameIsRunning = true; //syncvar para cada relogio independente rodar no mesmo tempo
     }
     void Update()
     {
@@ -39,7 +40,7 @@ public class GameManager : NetworkBehaviour
                 LoseByTime();
             }
         }
-        if (Keyboard.current.enterKey.wasPressedThisFrame)
+        if (Keyboard.current.enterKey.wasPressedThisFrame)//Debug para ler quantos jogadores estão ativos e ready
         {
             Debug.Log($"Temos {numberOfPlayers} players");
             Debug.Log($"Temos {readyPlayers} players ready ");
@@ -82,7 +83,7 @@ public class GameManager : NetworkBehaviour
         foreach(NetworkIdentity ni in netIds)
             TargetWin(ni.connectionToClient);
     }
-    public void AddPlayer()
+    public void AddPlayer()//chamado no networkmanager quando um player entra
     {
         numberOfPlayers++;
         Debug.Log($"Temos {numberOfPlayers} players");

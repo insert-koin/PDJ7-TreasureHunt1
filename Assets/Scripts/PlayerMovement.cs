@@ -18,6 +18,7 @@ public class PlayerMovement : NetworkBehaviour {
     Vector3 moveDir;
     [SerializeField]public float mouseSensitivity = 100f;
     [SerializeField] private float xRotation = 0f;
+    [SerializeField] GameObject coleteTrocaCor;
     // Events that the PlayerUI will subscribe to
     public event System.Action<byte> OnPlayerNumberChanged;
     public event System.Action<Color32> OnPlayerColorChanged;
@@ -52,11 +53,11 @@ public class PlayerMovement : NetworkBehaviour {
     // This is called by the hook of playerColor SyncVar above
     void PlayerColorChanged(Color32 _, Color32 newPlayerColor)
     {
-        MeshRenderer meshRenderer = GetComponentInChildren<MeshRenderer>();
-        meshRenderer.material.color = newPlayerColor;
+        SkinnedMeshRenderer skinnedMeshRenderer = coleteTrocaCor.GetComponent<SkinnedMeshRenderer>();
+        skinnedMeshRenderer.material.color = newPlayerColor;
         OnPlayerColorChanged?.Invoke(newPlayerColor);
     }
-    [Command(requiresAuthority =false)]
+    [Command(requiresAuthority = false)]
     public void CmdGainPoints(byte pointsGained)
     {
         points += 1;
@@ -67,8 +68,7 @@ public class PlayerMovement : NetworkBehaviour {
                 GameManager.instance.Win(netIdentity);
             }
         }
-        else
-        {
+        else        {
             foreach (PlayerMovement p in playersList)
             {
                 if (p.teamIndex == teamIndex)
@@ -76,11 +76,12 @@ public class PlayerMovement : NetworkBehaviour {
                     if (p != this)
                     {
                         p.points = points;
-                        p.playerUI.playerPointsText.text=string.Format("Points: {0:00}", p.points);
+                        p.DisplayPoints();
+                        //não funcionou :(
                     }
                 }
             }
-            if (points > 10)
+            if (points >= 10)
             {
                 NetworkIdentity[] networkIdentities = new NetworkIdentity[playersList.Count / 2];
                 int i = 0;
@@ -100,64 +101,14 @@ public class PlayerMovement : NetworkBehaviour {
     [ClientRpc]
     public void RpcDisplayPoints()
     {
-        StartCoroutine(DisplayPoints());
+        StartCoroutine(DisplayPoints());//feito com corrotina devido a problemas de sync
     }
     IEnumerator DisplayPoints()
     {
-        yield return new WaitForSeconds(.1f);
+        yield return new WaitForSeconds(.1f);//end of frame não foi espera suficiente
         OnPlayerPointsChanged?.Invoke(points);
     }
     // This is called by the hook of playerData SyncVar above
-    void PlayerPointsChanged(byte _, byte newPoints)
-    {
-        if (!GameManager.instance.teamModeOn)
-        {
-            OnPlayerPointsChanged?.Invoke(newPoints);
-            if (newPoints >= 10)
-            {
-                GameManager.instance.Win(netIdentity);
-            }
-        }
-        else
-        {
-            int teamPoints = 0;
-            foreach (PlayerMovement p in playersList)
-            {
-                if (p.teamIndex == teamIndex)
-                {
-                    teamPoints += p.points;
-                }
-            }
-            if (teamPoints >= 10)
-            {
-                NetworkIdentity[] networkIdentities = new NetworkIdentity[playersList.Count / 2];
-                int i = 0;
-                foreach (PlayerMovement p in playersList)
-                {
-                    if (p.teamIndex == teamIndex)
-                    {
-                        networkIdentities[i] = p.netIdentity;
-                        i++;
-                    }
-                }
-                GameManager.instance.TeamWin(networkIdentities);
-            }
-        }
-    }
-        /* int teamPoints = 0;
-        foreach (PlayerMovement p in playersList)
-        {
-            if (p.teamIndex == teamIndex)
-            {
-                teamPoints += p.points;
-            }
-        }
-        OnPlayerPointsChanged.Invoke((byte)teamPoints); */
-    /* [Command]
-    void CmdIncreaseTeamPoints()
-    {
-        teamPoints[teamIndex]++;
-    } */
     #endregion
     #region Server
     public override void OnStartServer()
@@ -167,7 +118,7 @@ public class PlayerMovement : NetworkBehaviour {
         playersList.Add(this);
         // set the Player Color SyncVar
         playerColor = Random.ColorHSV(0f, 1f, 0.9f, 0.9f, 1f, 1f);
-        // set the initial player data
+        // set the initial player points
         points = 0;
 
     }
@@ -181,7 +132,7 @@ public class PlayerMovement : NetworkBehaviour {
             player.playerNumber = playerNumber++;
     }
     [ServerCallback]
-    public static void SetTeamColors()
+    public static void SetTeamColors()//chamado ao atingirmos 4 players, só muda a cor e seta a syncvar dos times
     {
         for (int i = 0; i < playersList.Count; i++)
         {
@@ -224,8 +175,8 @@ public class PlayerMovement : NetworkBehaviour {
         OnPlayerColorChanged.Invoke(playerColor);
         OnPlayerPointsChanged.Invoke(points);
         currentSpeed = speed;
-        MeshRenderer meshRenderer = GetComponentInChildren<MeshRenderer>();
-        meshRenderer.material.color = playerColor;
+        SkinnedMeshRenderer skinnedMeshRenderer = coleteTrocaCor.GetComponent<SkinnedMeshRenderer>();
+        skinnedMeshRenderer.material.color = playerColor;
     }
     public override void OnStartLocalPlayer()
     {
@@ -253,7 +204,7 @@ public class PlayerMovement : NetworkBehaviour {
     #region Unity
     // Update is called once per frame
     void Update() {
-        if (!isLocalPlayer) return; //funcionou sem isso, mas por via das duvidas ta ai né
+        if (!isLocalPlayer) return;
         //mover
         moveInput = moveAction.ReadValue<Vector2>();
         moveDir = new Vector3(moveInput.x, 0f, moveInput.y);
@@ -264,10 +215,11 @@ public class PlayerMovement : NetworkBehaviour {
         float mouseY = lookInput.y * mouseSensitivity * Time.deltaTime;
         xRotation -= mouseY;
         xRotation = Mathf.Clamp(xRotation, -90f, 90f);
-        myCamera.transform.localRotation = Quaternion.Euler(xRotation, 0f, 0f);
         // Apply vertical look to camera
-        transform.Rotate(Vector3.up * mouseX);
+        myCamera.transform.localRotation = Quaternion.Euler(xRotation, 0f, 0f);
         // Apply horizontal look to player/parent
+        transform.Rotate(Vector3.up * mouseX);
+        //ReadyCheck
         if (Keyboard.current.enterKey.wasPressedThisFrame)
         {
             if (isReady)
@@ -284,7 +236,7 @@ public class PlayerMovement : NetworkBehaviour {
     }
     #endregion
     [TargetRpc]
-    public void TargetTeleportPlayer()
+    public void TargetTeleportPlayer()//trap de teleporte
     {
         float radius;
         if (TreasureSpawner.instance != null)
@@ -301,7 +253,7 @@ public class PlayerMovement : NetworkBehaviour {
         transform.position = pos;
         Physics.SyncTransforms();
     }
-    [TargetRpc]
+    [TargetRpc]//Trap de slow
     public void TargetSlowPlayer()
     {
         currentSpeed = speed / 2;
