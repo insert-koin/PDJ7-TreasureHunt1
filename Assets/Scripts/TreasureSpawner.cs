@@ -16,6 +16,7 @@ public class TreasureSpawner : NetworkBehaviour
     public override void OnStartServer()
     {
         base.OnStartServer();
+        instance = this;
         SpawnTreasure(10);
         SpawnTraps(20);
     }

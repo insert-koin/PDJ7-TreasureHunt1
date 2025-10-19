@@ -241,10 +241,12 @@ MonoBehaviour:
   syncMode: 0
   syncInterval: 0
   speed: 5
+  currentSpeed: 0
   myCamera: {fileID: 5167744524434275424}
   myAudioListener: {fileID: 9071488965920727034}
   mouseSensitivity: 15
   xRotation: 0
+  teamIndex: 0
   playerUIPrefab: {fileID: 1396210479356243849, guid: 84c52efcc10093442b4b44f12e5dd9f3, type: 3}
   playerNumber: 0
   playerColor:
@@ -498,7 +500,7 @@ BoxCollider:
   m_LayerOverridePriority: 0
   m_IsTrigger: 0
   m_ProvidesContacts: 0
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
